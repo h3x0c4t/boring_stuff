@@ -1,6 +1,7 @@
 <script lang="ts">
   import { NCard, NButton, NIcon } from 'naive-ui'
   import { CloseFilled } from '@vicons/material'
+  import { deleteProject }  from './Workspace.vue'
 
   export default {
     props: {
@@ -9,7 +10,7 @@
         required: true
       },
       Id: {
-        type: String,
+        type: Number,
         required: true
       },
       Time: {
@@ -22,6 +23,11 @@
       NButton,
       NIcon,
       CloseFilled
+    },
+    setup() {
+      return {
+        deleteProject
+      }
     }
   }
 </script>
@@ -32,7 +38,7 @@
       <span class="time">[{{ Time }}]&nbsp;</span>
       <span class="name">{{ Name }}</span>
       <span class="id">({{ Id }})&nbsp;</span>
-      <n-button quaternary circle>
+      <n-button quaternary circle @click="deleteProject(Id)">
         <template #icon>
           <n-icon><close-filled/></n-icon>
         </template>

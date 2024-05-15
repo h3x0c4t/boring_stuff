@@ -7,6 +7,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 )
 
 var DB *sql.DB
@@ -91,6 +92,14 @@ func main() {
 
 	// Веб-сервер
 	app := fiber.New()
+
+	// CORS
+	app.Use(cors.New(cors.Config{
+		AllowHeaders:     "Origin,Content-Type,Accept,Content-Length,Accept-Language,Accept-Encoding,Connection,Access-Control-Allow-Origin",
+		AllowOrigins:     "http://localhost:3000, http://localhost:5173",
+		AllowCredentials: true,
+		AllowMethods:     "GET,POST,HEAD,PUT,DELETE,PATCH,OPTIONS",
+	}))
 
 	// Basic авторизация
 	// app.Use(basicauth.New(basicauth.Config{
