@@ -8,7 +8,9 @@
   type Project = {
     id: number
     name: string
-    time_created: string
+    status: boolean
+    time_stopped: string
+    time_started: string
   }
 
   var Projects = ref([] as Project[])
@@ -81,9 +83,9 @@
 <template>
   <div class="workspace">
     <div class="cards">
-      <project-card v-for="project in Projects" :Id="project.id" :Name="project.name" :Time="project.time_created"/>
+      <project-card v-for="project in Projects" :Id="project.id" :Name="project.name" :Time="project.time_started" :Status="project.status"/>
     </div>
-    <div class="new-button">
+    <div>
       <n-button secondary @click="showModal = true">
         <template #icon>
             <n-icon><add-filled/></n-icon>
@@ -107,6 +109,9 @@
 .workspace {
   flex-grow: 1;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .cards {
@@ -114,11 +119,7 @@
   flex-direction: column;
   gap: 16px;
   padding: 16px;
-}
-
-.new-button {
-  display: flex;
-  justify-content: center;
+  width: 80%;
 }
 
 .buttons-dialog {

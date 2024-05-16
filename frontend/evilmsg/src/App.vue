@@ -14,7 +14,7 @@ export default {
 
 <template>
   <Header/>
-  <Workspace/>
+  <router-view/>
 </template>
 
 <style>

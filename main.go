@@ -23,7 +23,9 @@ type ProjectDeleteJSON struct {
 type ProjectGetJSON struct {
 	ID          int    `json:"id"`
 	Name        string `json:"name"`
-	TimeCreated string `json:"time_created"`
+	Status      bool   `json:"status"`
+	TimeStopped string `json:"time_stopped"`
+	TimeCreated string `json:"time_started"`
 }
 
 func CreateProject(name string) error {
@@ -44,8 +46,17 @@ func DeleteProject(id int) error {
 	return nil
 }
 
+func StopProject(id int) error {
+	_, err := DB.Exec("UPDATE projects SET status = 0, time_stopped = CURRENT_TIMESTAMP WHERE id = ?", id)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func GetProjects() ([]ProjectGetJSON, error) {
-	rows, err := DB.Query("SELECT id, name, datetime(time_created) FROM projects")
+	rows, err := DB.Query("SELECT id, name, status, datetime(time_stopped), datetime(time_started) FROM projects")
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +65,7 @@ func GetProjects() ([]ProjectGetJSON, error) {
 	projects := []ProjectGetJSON{}
 	for rows.Next() {
 		project := ProjectGetJSON{}
-		err = rows.Scan(&project.ID, &project.Name, &project.TimeCreated)
+		err = rows.Scan(&project.ID, &project.Name, &project.Status, &project.TimeStopped, &project.TimeCreated)
 		if err != nil {
 			return nil, err
 		}
@@ -65,12 +76,25 @@ func GetProjects() ([]ProjectGetJSON, error) {
 	return projects, nil
 }
 
+func GetProject(id int) (ProjectGetJSON, error) {
+	project := ProjectGetJSON{}
+	err := DB.QueryRow("SELECT id, name, status, datetime(time_stopped), datetime(time_started) FROM projects WHERE id = ?", id).
+		Scan(&project.ID, &project.Name, &project.Status, &project.TimeStopped, &project.TimeCreated)
+	if err != nil {
+		return project, err
+	}
+
+	return project, nil
+}
+
 func initializeDB(db *sql.DB) {
 	sqlStmt := `
 	CREATE TABLE IF NOT EXISTS projects (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		name TEXT NOT NULL,
-		time_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		status BOOLEAN DEFAULT 1,
+		time_stopped TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		time_started TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 	);
 	`
 	_, err := db.Exec(sqlStmt)
@@ -96,7 +120,7 @@ func main() {
 	// CORS
 	app.Use(cors.New(cors.Config{
 		AllowHeaders:     "Origin,Content-Type,Accept,Content-Length,Accept-Language,Accept-Encoding,Connection,Access-Control-Allow-Origin",
-		AllowOrigins:     "http://localhost:3000, http://localhost:5173",
+		AllowOrigins:     "http://127.0.0.1:3000,http://localhost:5173",
 		AllowCredentials: true,
 		AllowMethods:     "GET,POST,HEAD,PUT,DELETE,PATCH,OPTIONS",
 	}))
@@ -109,7 +133,7 @@ func main() {
 	// }))
 
 	// Фронтенд
-	app.Static("/", "./frontend/evilmsg/dist")
+	app.Static("/", "../frontend/evilmsg/dist")
 
 	// Получение списка проектов
 	// curl 127.0.0.1:3000/api/projects
@@ -121,6 +145,24 @@ func main() {
 		}
 
 		return c.JSON(projects)
+	})
+
+	// Получение проекта
+	// curl 127.0.0.1:3000/api/projects/1
+	app.Get("/api/projects/:id", func(c *fiber.Ctx) error {
+		id, err := c.ParamsInt("id")
+		if err != nil {
+			log.Printf("ERROR: %v", err)
+			return c.SendStatus(400)
+		}
+
+		project, err := GetProject(id)
+		if err != nil {
+			log.Printf("ERROR: %v", err)
+			return c.SendStatus(404)
+		}
+
+		return c.JSON(project)
 	})
 
 	// Новый проект
@@ -164,6 +206,23 @@ func main() {
 		}
 
 		if err := DeleteProject(project.ID); err != nil {
+			log.Printf("ERROR: %v", err)
+			return c.SendStatus(500)
+		}
+
+		return c.SendStatus(200)
+	})
+
+	// Остановка проекта
+	// curl -X POST -H "Content-Type: application/json" --data '{"status":false}' 127.0.0.1:3000/api/projects/1
+	app.Patch("/api/projects/:id", func(c *fiber.Ctx) error {
+		id, err := c.ParamsInt("id")
+		if err != nil {
+			log.Printf("ERROR: %v", err)
+			return c.SendStatus(400)
+		}
+
+		if err := StopProject(id); err != nil {
 			log.Printf("ERROR: %v", err)
 			return c.SendStatus(500)
 		}
