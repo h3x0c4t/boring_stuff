@@ -139,7 +139,7 @@
             </div>
           </div>
           <div class="control">
-            <n-button size="small" ghost type="primary" @click="stopProject(CurProject.id)" v-if="CurProject.status">Генерация агентов</n-button>
+            <n-button size="small" ghost type="primary" v-if="CurProject.status">Генерация агентов</n-button>
             <n-button size="small" ghost type="primary" v-else disabled>Генерация агентов</n-button>
             <n-button size="small" ghost type="info">Экспорт таблицы</n-button>
             <n-button size="small" ghost type="error" @click="stopProject(CurProject.id)" v-if="CurProject.status">Завершить проект</n-button> 
