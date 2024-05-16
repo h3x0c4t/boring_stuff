@@ -87,6 +87,62 @@ func GetProject(id int) (ProjectGetJSON, error) {
 	return project, nil
 }
 
+func GetProjectStatus(id int) (bool, error) {
+	var status bool
+	err := DB.QueryRow("SELECT status FROM projects WHERE id = ?", id).Scan(&status)
+	if err != nil {
+		return false, err
+	}
+
+	return status, nil
+}
+
+type HitsGetJSON struct {
+	ID   int    `json:"id"`
+	Time string `json:"time"`
+	IP   string `json:"ip"`
+	Data string `json:"data"`
+}
+
+func NewHit(projectID int, ip string, data string) error {
+	_, err := DB.Exec("INSERT INTO data (project_id, ip, data) VALUES (?, ?, ?)", projectID, ip, data)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func GetHits(projectID int) ([]HitsGetJSON, error) {
+	rows, err := DB.Query("SELECT id, datetime(time), ip, data FROM data WHERE project_id = ?", projectID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	hits := []HitsGetJSON{}
+	for rows.Next() {
+		hit := HitsGetJSON{}
+		err = rows.Scan(&hit.ID, &hit.Time, &hit.IP, &hit.Data)
+		if err != nil {
+			return nil, err
+		}
+
+		hits = append(hits, hit)
+	}
+
+	return hits, nil
+}
+
+func DeleteHits(projectID int) error {
+	_, err := DB.Exec("DELETE FROM data WHERE project_id = ?", projectID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func initializeDB(db *sql.DB) {
 	sqlStmt := `
 	CREATE TABLE IF NOT EXISTS projects (
@@ -98,6 +154,21 @@ func initializeDB(db *sql.DB) {
 	);
 	`
 	_, err := db.Exec(sqlStmt)
+	if err != nil {
+		panic(err)
+	}
+
+	sqlStmt = `
+	CREATE TABLE IF NOT EXISTS data (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		project_id INTEGER NOT NULL,
+		time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		ip TEXT NOT NULL,
+		data JSON NOT NULL
+	);
+	`
+
+	_, err = db.Exec(sqlStmt)
 	if err != nil {
 		panic(err)
 	}
@@ -210,6 +281,11 @@ func main() {
 			return c.SendStatus(500)
 		}
 
+		if err := DeleteHits(project.ID); err != nil {
+			log.Printf("ERROR: %v", err)
+			return c.SendStatus(500)
+		}
+
 		return c.SendStatus(200)
 	})
 
@@ -228,6 +304,55 @@ func main() {
 		}
 
 		return c.SendStatus(200)
+	})
+
+	// Листенер вложений
+	// curl -X POST -H "Content-Type: application/json" --data '{"status":false}' 127.0.0.1:3000/api/hit/1
+	app.Post("/api/hit/:id", func(c *fiber.Ctx) error {
+		id, err := c.ParamsInt("id")
+		if err != nil {
+			log.Printf("ERROR: %v", err)
+			return c.SendStatus(400)
+		}
+
+		status, err := GetProjectStatus(id)
+		if err != nil {
+			log.Printf("ERROR: %v", err)
+			return c.SendStatus(404)
+		}
+
+		if !status {
+			log.Printf("WARNING: Project %d is stopped", id)
+			return c.SendStatus(404)
+		}
+
+		ip := c.IP()
+		data := c.Body()
+
+		if err := NewHit(id, ip, string(data)); err != nil {
+			log.Printf("ERROR: %v", err)
+			return c.SendStatus(500)
+		}
+
+		return c.SendStatus(200)
+	})
+
+	// Получение отстуков
+	// curl 127.0.0.1:3000/api/hit/1
+	app.Get("/api/hit/:id", func(c *fiber.Ctx) error {
+		id, err := c.ParamsInt("id")
+		if err != nil {
+			log.Printf("ERROR: %v", err)
+			return c.SendStatus(400)
+		}
+
+		hits, err := GetHits(id)
+		if err != nil {
+			log.Printf("ERROR: %v", err)
+			return c.SendStatus(404)
+		}
+
+		return c.JSON(hits)
 	})
 
 	app.Listen(":3000")

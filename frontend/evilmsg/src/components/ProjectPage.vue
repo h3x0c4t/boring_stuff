@@ -1,7 +1,8 @@
 <script lang="ts">
-  import { NCard, NButton, NInputGroup, NSelect } from 'naive-ui'
-  import { useRoute } from 'vue-router'
-  import { ref, onMounted } from 'vue'
+  import { NCard, NButton, NInputGroup, NSelect, NDataTable, NCode } from 'naive-ui'
+  import { useRoute, onBeforeRouteLeave } from 'vue-router'
+  import { ref, onMounted, h } from 'vue'
+  import type { DataTableColumns } from 'naive-ui'
 
   type Project = {
     id: number
@@ -34,12 +35,72 @@
     console.log(`Stopped project with id ${id}`)
   }
 
+  type Hit = {
+    id: number
+    time: string
+    ip: string
+    data: string
+  }
+
+  var Hits = ref([] as Hit[])
+
+  const fetchHits = async (id: string) => {
+    const response = await fetch(`http://localhost:3000/api/hit/${id}`)
+    const data = await response.json()
+    Hits.value = data
+    console.log(data)
+  }
+
+  var intervalId: number
+
+  const startFetchingHits = (id: string) => {
+    intervalId = setInterval(() => {
+      fetchHits(id)
+    }, 1000)
+  }
+
+  const stopFetchingHits = () => {
+    clearInterval(intervalId)
+    Hits.value = []
+  }
+
+  const HitsColumns = (): DataTableColumns<Hit> => [
+    {
+      title: 'ID',
+      key: 'id',
+      width: 50
+    },
+    {
+      title: 'Время',
+      key: 'time',
+      width: 200
+    },
+    {
+      title: 'IP',
+      key: 'ip',
+      width: 150
+    },
+    {
+      title: 'Данные',
+      key: 'data',
+      render (row, index) {
+        var rdata = JSON.stringify(JSON.parse(row.data), null, 2);
+        return h(NCode, {
+          language: 'json',
+          wordWrap: true,
+          code: rdata
+        })
+      }
+    }
+  ]
+
   export default {
     components: {
       NCard,
       NButton,
       NInputGroup,
       NSelect,
+      NDataTable
     },
     setup() {
       const route = useRoute()
@@ -47,11 +108,19 @@
 
       onMounted(() => {
         fetchProject(id)
+        fetchHits(id)
+        startFetchingHits(id)
+      })
+
+      onBeforeRouteLeave(() => {
+        stopFetchingHits()
       })
 
       return {
         CurProject,
-        stopProject
+        stopProject,
+        HitsColumns,
+        Hits,
       }
     }
   }
@@ -70,7 +139,8 @@
             </div>
           </div>
           <div class="control">
-            <n-button size="small" ghost type="primary">Генерация агентов</n-button>
+            <n-button size="small" ghost type="primary" @click="stopProject(CurProject.id)" v-if="CurProject.status">Генерация агентов</n-button>
+            <n-button size="small" ghost type="primary" v-else disabled>Генерация агентов</n-button>
             <n-button size="small" ghost type="info">Экспорт таблицы</n-button>
             <n-button size="small" ghost type="error" @click="stopProject(CurProject.id)" v-if="CurProject.status">Завершить проект</n-button> 
             <n-button size="small" ghost type="error" v-else disabled>Завершить проект</n-button> 
@@ -78,7 +148,11 @@
         </div>
       </n-card>
       <n-card class="data-table">
-        <n-button>Button</n-button>
+        <n-data-table
+          :columns=HitsColumns()
+          :data="Hits"
+          style="height: 100%;"
+        />
       </n-card>
     </div>
 </template>

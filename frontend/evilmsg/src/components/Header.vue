@@ -1,10 +1,25 @@
 <script lang="ts">
-  export default {}
+  import { useRouter } from 'vue-router'
+
+  export default {
+    setup() {
+      const router = useRouter()
+
+      const onLogoClick = () => {
+        console.log(`Clicked on logo`)
+        router.push(`/`)
+      }
+
+      return {
+        onLogoClick
+      }
+    }
+  }
 </script>
 
 <template>
   <div class="header">
-    <span class="logo-text">Фишинг хуйня</span>
+    <span class="logo-text" @click="onLogoClick()">Фишинг хуйня</span>
   </div>
 </template>
 
