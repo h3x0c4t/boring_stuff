@@ -83,7 +83,7 @@
     {
       title: 'Данные',
       key: 'data',
-      render (row, index) {
+      render (row, _) {
         var rdata = JSON.stringify(JSON.parse(row.data), null, 2);
         return h(NCode, {
           language: 'json',
@@ -93,6 +93,12 @@
       }
     }
   ]
+
+  const generateAgents = (id: number) => {
+    location.href = `http://localhost:3000/api/agent/linux/raw/${id}`
+
+    console.log(`Generated agents for project with id ${id}`)
+  }
 
   export default {
     components: {
@@ -120,6 +126,7 @@
         CurProject,
         stopProject,
         HitsColumns,
+        generateAgents,
         Hits,
       }
     }
@@ -134,12 +141,12 @@
             <div class="project-name">{{ CurProject.name }}</div>
             <div class="description">Начало: {{ CurProject.time_started }}</div>
             <div class="description">Статус: 
-              <span v-if="CurProject.status" class="status-active">Активен <span style="font-weight: normal; color: black;">(xxx.xxx.xxx.xxx:xxxx)</span></span>
-              <span v-else class="status-disable">Завершен</span>
+              <span v-if="CurProject.status" class="status-active">Активен</span>
+              <span v-else class="status-disable">Завершен ({{ CurProject.time_stopped }})</span>
             </div>
           </div>
           <div class="control">
-            <n-button size="small" ghost type="primary" v-if="CurProject.status">Генерация агентов</n-button>
+            <n-button size="small" ghost type="primary" v-if="CurProject.status" @click="generateAgents(CurProject.id)">Генерация агентов</n-button>
             <n-button size="small" ghost type="primary" v-else disabled>Генерация агентов</n-button>
             <n-button size="small" ghost type="info">Экспорт таблицы</n-button>
             <n-button size="small" ghost type="error" @click="stopProject(CurProject.id)" v-if="CurProject.status">Завершить проект</n-button> 

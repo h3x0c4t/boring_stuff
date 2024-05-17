@@ -1,1 +1,3 @@
-bin/
+agents/
+evilmsg
+evilmsg_db.sqlite3

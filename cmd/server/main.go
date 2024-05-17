@@ -2,7 +2,9 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
+	"os/exec"
 
 	_ "github.com/mattn/go-sqlite3"
 
@@ -173,6 +175,10 @@ func initializeDB(db *sql.DB) {
 		panic(err)
 	}
 }
+
+var ADDR string = "0.0.0.0"
+var HIT_ADDR string = "127.0.0.1"
+var PORT string = "3000"
 
 func main() {
 	// Подключение к БД
@@ -355,5 +361,29 @@ func main() {
 		return c.JSON(hits)
 	})
 
-	app.Listen(":3000")
+	// Генерация агента
+	app.Get("/api/agent/linux/raw/:id", func(c *fiber.Ctx) error {
+		id, err := c.ParamsInt("id")
+		if err != nil {
+			log.Printf("ERROR: %v", err)
+			return c.SendStatus(400)
+		}
+
+		cmd := exec.Command("make", "agent_linux", fmt.Sprintf("HIT_URL=http://%s:%s/api/hit/%d", HIT_ADDR, PORT, id))
+		out, err := cmd.Output()
+		if err != nil {
+			log.Printf("ERROR: %v", err)
+			log.Println(string(out))
+			return c.SendStatus(500)
+		}
+
+		log.Println(string(out))
+
+		filename := fmt.Sprintf("agent_linux_%d", id)
+		c.Set("Content-Disposition", "attachment; filename="+filename)
+
+		return c.SendFile("agents/agent_linux")
+	})
+
+	app.Listen(ADDR + ":" + PORT)
 }
