@@ -191,6 +191,9 @@ func main() {
 
 	initializeDB(DB)
 
+	// TODO: Аргументы командной строки ADDR HIT_ADDR PORT
+	// TODO: ZIP упаковка агента без использования утилиты zip
+
 	// Веб-сервер
 	app := fiber.New()
 
@@ -210,7 +213,7 @@ func main() {
 	// }))
 
 	// Фронтенд
-	app.Static("/", "../frontend/evilmsg/dist")
+	app.Static("/", "./frontend/evilmsg/dist")
 
 	// Получение списка проектов
 	// curl 127.0.0.1:3000/api/projects
@@ -379,10 +382,10 @@ func main() {
 
 		log.Println(string(out))
 
-		filename := fmt.Sprintf("agent_linux_%d", id)
+		filename := fmt.Sprintf("agent_linux_%d.zip", id)
 		c.Set("Content-Disposition", "attachment; filename="+filename)
 
-		return c.SendFile("agents/agent_linux")
+		return c.SendFile("agents/agent_linux.zip")
 	})
 
 	app.Listen(ADDR + ":" + PORT)
