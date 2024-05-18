@@ -15,14 +15,14 @@
   var CurProject = ref({} as Project)
 
   const fetchProject = async (id: string) => {
-    const response = await fetch(`http://localhost:3000/api/projects/${id}`)
+    const response = await fetch(`/api/projects/${id}`)
     const data = await response.json()
     CurProject.value = data
     console.log(data)
   }
 
   const stopProject = async (id: number) => {
-    await fetch(`http://localhost:3000/api/projects/${id}`, {
+    await fetch(`/api/projects/${id}`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json'
@@ -45,7 +45,7 @@
   var Hits = ref([] as Hit[])
 
   const fetchHits = async (id: string) => {
-    const response = await fetch(`http://localhost:3000/api/hit/${id}`)
+    const response = await fetch(`/api/hit/${id}`)
     const data = await response.json()
     Hits.value = data
     console.log(data)
@@ -95,7 +95,7 @@
   ]
 
   const generateAgents = (id: number) => {
-    location.href = `http://localhost:3000/api/agent/linux/raw/${id}`
+    location.href = `/api/agent/linux/raw/${id}`
 
     console.log(`Generated agents for project with id ${id}`)
   }

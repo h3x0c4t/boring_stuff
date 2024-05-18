@@ -18,14 +18,14 @@
   var projectName = ref('')
 
   const fetchProjects = async () => {
-    const response = await fetch('http://localhost:3000/api/projects')
+    const response = await fetch('/api/projects')
     const data = await response.json()
     Projects.value = data
     console.log(data)
   }
 
   export const deleteProject = async (id: number) => {
-    await fetch(`http://localhost:3000/api/projects`, {
+    await fetch(`/api/projects`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json'
@@ -39,7 +39,7 @@
   }
 
   const createProject = async (name: string) => {
-    await fetch(`http://localhost:3000/api/projects`, {
+    await fetch(`/api/projects`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json'
