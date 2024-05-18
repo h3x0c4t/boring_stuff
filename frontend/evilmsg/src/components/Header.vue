@@ -19,7 +19,7 @@
 
 <template>
   <div class="header">
-    <span class="logo-text" @click="onLogoClick()">Фишинг хуйня</span>
+    <span class="logo-text" @click="onLogoClick()">Имитатор фишинговой атаки</span>
   </div>
 </template>
 

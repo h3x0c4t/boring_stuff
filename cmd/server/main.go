@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"flag"
 	"fmt"
 	"log"
 	"os/exec"
@@ -181,6 +182,12 @@ var HIT_ADDR string = "127.0.0.1"
 var PORT string = "3000"
 
 func main() {
+	// Обработка флагов командной строки
+	flag.StringVar(&ADDR, "i", ADDR, "Server address")
+	flag.StringVar(&PORT, "p", PORT, "Server port")
+	flag.StringVar(&HIT_ADDR, "l", HIT_ADDR, "Hit address")
+	flag.Parse()
+
 	// Подключение к БД
 	var err error
 	DB, err = sql.Open("sqlite3", "./evilmsg_db.sqlite3")
@@ -190,9 +197,6 @@ func main() {
 	defer DB.Close()
 
 	initializeDB(DB)
-
-	// TODO: Аргументы командной строки ADDR HIT_ADDR PORT
-	// TODO: ZIP упаковка агента без использования утилиты zip
 
 	// Веб-сервер
 	app := fiber.New()
@@ -204,13 +208,6 @@ func main() {
 		AllowCredentials: true,
 		AllowMethods:     "GET,POST,HEAD,PUT,DELETE,PATCH,OPTIONS",
 	}))
-
-	// Basic авторизация
-	// app.Use(basicauth.New(basicauth.Config{
-	// 	Users: map[string]string{
-	// 		"admin": "1234",
-	// 	},
-	// }))
 
 	// Фронтенд
 	app.Static("/", "./frontend/evilmsg/dist")
